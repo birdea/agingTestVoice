@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/tv_test_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:background="#cba"
+        android:minHeight="20dp"
+        android:text="info"/>
+
+    <TextView
+        android:id="@+id/tv_current_index"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:background="#abc"
+        android:minHeight="20dp"
+        android:text="index"/>
+
+    <TextView
+        android:id="@+id/tv_current_command"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:background="#112244"
+        android:textColor="@color/white"
+        android:minHeight="50dp"
+        android:text="command"/>
+
+    <TextView
+        android:id="@+id/tv_time_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:background="#115544"
+        android:textColor="@color/white"
+        android:minHeight="50dp"
+        android:text="time.info"/>
+
+    <Button
+        android:id="@+id/btn_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start"
+        android:onClick="onClick"/>
+
+    <Button
+        android:id="@+id/btn_stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop"
+        android:onClick="onClick"
+        />
+
+</LinearLayout>
