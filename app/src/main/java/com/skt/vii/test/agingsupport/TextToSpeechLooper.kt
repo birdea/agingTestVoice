@@ -1,6 +1,7 @@
-package com.skt.vii.test.agingsupport
+package com.skt.vii.test.agingvoice
 
 import android.content.Context
+import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -20,11 +21,17 @@ class TextToSpeechLooper (val context: Context) {
 
     val messsages = arrayOf(
         "What time is it now?",
-        "What is the Weather in Seoul?",
-        "Who is the Barack Obama?",
+        //"What is the Weather in Seoul?",
+        //"Who is the Barack Obama?",
         "Play music.",
-        "Stop music."
+        //"Stop music."
     )
+
+    val COUNTDOWN_TICK = 1000L
+
+    val COUNTDOWN_DELAY_WAKEWORD = 2500L
+    val COUNTDOWN_DELAY_COMMAND = 2500L
+    val COUNTDOWN_DELAY_IDLE = 15000L
 
     val sdf = SimpleDateFormat("yy/MM/dd HH:mm:ss")
 
@@ -70,7 +77,7 @@ class TextToSpeechLooper (val context: Context) {
     var uiHandler = Handler(Looper.getMainLooper())
 
     interface UpdateCallback {
-        fun onUpdate(message: String)
+        fun onUpdate(message: String, countdown: Int = -1)
     }
 
     var updateListener : UpdateCallback? = null
@@ -79,13 +86,12 @@ class TextToSpeechLooper (val context: Context) {
         updateListener = listener
     }
 
-    fun notifyCallback(message: String) {
-        updateListener?.onUpdate(message)
+    fun notifyCallback(message: String, countdown: Int = -1) {
+        updateListener?.onUpdate(message, countdown)
     }
 
-    val delayWakeword = 1000L
-    val delayCommandRequest = 4000L
-    val dealyCommandDone = 15000L
+
+
 
     val strWakeword: String = "ALEXA"
 
@@ -133,8 +139,6 @@ class TextToSpeechLooper (val context: Context) {
 
         ttsCommand?.setLanguage(Locale.US)
 
-        var count = 5
-
         var voiceList = ttsCommand?.voices?.iterator()
         voiceList?.let{
             for (item in voiceList) {
@@ -158,7 +162,7 @@ class TextToSpeechLooper (val context: Context) {
                 } else {
                     // command -> wakeword
                     notifyCallback("TTS.onDone: $status")
-                    commandHandler.sendEmptyMessageDelayed(1, dealyCommandDone)
+                    countDownTimerIdle.start()
                 }
             }
 
@@ -176,7 +180,6 @@ class TextToSpeechLooper (val context: Context) {
 
     class CommandHandler(val controller: TextToSpeechLooper) : Handler() {
         override fun handleMessage(msg: Message) {
-
             when (msg.what) {
                 0 -> {
                     controller.startCommand()
@@ -195,30 +198,56 @@ class TextToSpeechLooper (val context: Context) {
     }
 
     private fun startWakeword() {
-        uiHandler.postDelayed({
-            Log.d(TAG, "startWakeword() exec now")
-            val params = HashMap<String, String>()
-            params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = strWakeword
-            var result = ttsCommand?.speak(strWakeword, TextToSpeech.QUEUE_FLUSH, params)
-        }, delayWakeword)
+        countDownTimerWakeword.start()
+
     }
 
     private fun startCommand() {
-        uiHandler.postDelayed({
-            if (messsages.size <= commandIndex) {
-                commandIndex = 0
+        countDownTimerCommand.start()
+    }
+
+    // status: idle -> wakeword
+    var countDownTimerWakeword: CountDownTimer = object: CountDownTimer(COUNTDOWN_DELAY_WAKEWORD,COUNTDOWN_TICK) {
+        override fun onTick(progess: Long) {
+            notifyCallback("", (progess/1000).toInt())
+        }
+        override fun onFinish() {
+            uiHandler.post {
+                Log.d(TAG, "startWakeword() exec now")
+                val params = HashMap<String, String>()
+                params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = strWakeword
+                var result = ttsCommand?.speak(strWakeword, TextToSpeech.QUEUE_FLUSH, params)
             }
-            Log.d(TAG, "startCommand($commandIndex) exec now")
+        }
+    }
+    // status: wakeword -> command
+    var countDownTimerCommand: CountDownTimer = object: CountDownTimer(COUNTDOWN_DELAY_COMMAND,COUNTDOWN_TICK) {
+        override fun onTick(progess: Long) {
+            notifyCallback("", (progess/1000).toInt())
+        }
+        override fun onFinish() {
+            uiHandler.post{
+                if (messsages.size <= commandIndex) {
+                    commandIndex = 0
+                }
+                Log.d(TAG, "startCommand($commandIndex) exec now")
 
-            val command = getCurrentCommand()
+                val command = getCurrentCommand()
 
-            //notifyCallback("request to play command:$command")
-
-            val params = HashMap<String, String>()
-            params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = command
-            var result = ttsCommand?.speak(command, TextToSpeech.QUEUE_FLUSH, params)
-            setCommandExecuted()
-
-        }, delayCommandRequest)
+                val params = HashMap<String, String>()
+                params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = command
+                var result = ttsCommand?.speak(command, TextToSpeech.QUEUE_FLUSH, params)
+                setCommandExecuted()
+            }
+        }
+    }
+    // status: command -> idle
+    var countDownTimerIdle: CountDownTimer = object: CountDownTimer(COUNTDOWN_DELAY_IDLE,COUNTDOWN_TICK) {
+        override fun onTick(progess: Long) {
+            notifyCallback("", (progess/1000).toInt())
+        }
+        override fun onFinish() {
+            commandHandler.sendEmptyMessage(1)
+        }
     }
 }

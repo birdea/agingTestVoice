@@ -1,4 +1,4 @@
-package com.skt.vii.test.agingsupport
+package com.skt.vii.test.agingvoice
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -41,13 +41,18 @@ class MainActivity : AppCompatActivity() {
         tv_test_summary?.setText(ttsLooper.getSummaryMessage())
 
         ttsLooper.setOnUpdateCallback(object: TextToSpeechLooper.UpdateCallback{
-            override fun onUpdate(message: String) {
+            override fun onUpdate(message: String, countdown: Int) {
                 var cur = ttsLooper.commandIndex
                 var total = ttsLooper.commandExectued
                 var timeInfo = ttsLooper.getSummaryTimeInfo()
                 runOnUiThread {
                     tv_current_index?.setText("-test.index (cur/total): $cur/$total")
-                    tv_current_command?.setText("-test.command.message\n$message")
+                    if (!message.isNullOrEmpty()) {
+                        tv_current_command?.setText("-test.command.message\n$message")
+                    }
+                    if (countdown > -1) {
+                        timeInfo += "\n-countdown: $countdown"
+                    }
                     tv_time_info?.setText("-test.time.info\n$timeInfo")
                 }
             }
