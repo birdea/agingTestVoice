@@ -23,8 +23,12 @@ class TextToSpeechLooper (val context: Context) {
         "What time is it now?",
         //"What is the Weather in Seoul?",
         //"Who is the Barack Obama?",
-        "Play music.",
-        //"Stop music."
+        //"Play a jazz music.",
+        //
+        "Play a classic music.",
+        //
+        "Set a alarm after 10 seconds.",
+        "Stop.",
     )
 
     val COUNTDOWN_TICK = 1000L
