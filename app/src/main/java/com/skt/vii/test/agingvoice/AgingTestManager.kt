@@ -9,27 +9,12 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
-import org.intellij.lang.annotations.Language
-import java.text.SimpleDateFormat
-import java.time.Duration
+import java.lang.Exception
 import java.util.*
-import java.util.concurrent.TimeUnit
 
-class TextToSpeechLooper (val context: Context) {
+class AgingTestManager (val context: Context) {
 
     val TAG = "TextToSpeechLooper"
-
-    val messsages = arrayOf(
-        "What time is it now?",
-        //"What is the Weather in Seoul?",
-        //"Who is the Barack Obama?",
-        //"Play a jazz music.",
-        //
-        "Play a classic music.",
-        //
-        "Set a alarm after 10 seconds.",
-        "Stop.",
-    )
 
     val COUNTDOWN_TICK = 1000L
 
@@ -37,48 +22,53 @@ class TextToSpeechLooper (val context: Context) {
     val COUNTDOWN_DELAY_COMMAND = 2500L
     val COUNTDOWN_DELAY_IDLE = 15000L
 
-    val sdf = SimpleDateFormat("yy/MM/dd HH:mm:ss")
+    var ttsCommand:TextToSpeech? = null
 
-    var timeTestStarted: Long = 0
-    var timeTestRestarted: Long = 0
-    var timeTestStopped: Long = 0
-
-    fun getSummaryTimeInfo(): String {
-        var sb = StringBuilder()
-        sb.append("- start: ${sdf.format(timeTestStarted)}\n")
-        sb.append("- elapsed(st): ${getDurationTime(timeTestStarted)}\n")
-        if (timeTestRestarted > 0) {
-            sb.append("- restart: ${sdf.format(timeTestRestarted)}\n")
-            sb.append("- elapsed(rest): ${getDurationTime(timeTestRestarted)}\n")
-        }
-        if (timeTestStopped > 0) {
-            sb.append("- stop: ${sdf.format(timeTestStopped)}\n")
-        }
-        return sb.toString()
-    }
-
-    fun getDurationTime(timeFrom: Long): String {
-        val duration = (System.currentTimeMillis() - timeFrom) / (1000 * 60)
-        return "$duration mins"
-    }
+    val timeTestRecord = TimeRecord()
 
     var commandIndex = 0
     var commandExectued = 0
+    var commandHandler = CommandHandler(this)
+
+    var uiHandler = Handler(Looper.getMainLooper())
+
+    enum class Commands(val message: String, val locale: Locale, val wakeword: String) {
+
+        // for alexa
+        E1("What time is it now?", Locale.ENGLISH, "Alexa"),
+        E2("Play a classic music.", Locale.ENGLISH, "Alexa"),
+        E3("Set a alarm after 10 seconds.", Locale.ENGLISH, "Alexa"),
+        E4("Play a classic music.", Locale.ENGLISH, "Alexa"),
+        E5("Stop", Locale.ENGLISH, "Alexa"),
+        // for nugu(aria)
+        //K6("현재 시간을 알려주세요", Locale.KOREA, "아리야"),
+        //K7("현재 날씨를 알려주세요..", Locale.KOREA, "아리야"),
+        ;
+
+        companion object {
+            fun get(index: Int): Commands{
+                return try {
+                    values()[index]
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    E1
+                }
+            }
+        }
+    }
+
+    var currentCommand: Commands = Commands.E1
+        get() = Commands.get(commandIndex)
+
     fun getSummaryMessage(): String {
         var sb = StringBuilder()
         sb.append("-test.command.set\n")
         var index = 0
-        for (item in messsages) {
-            sb.append("[${index++}] $item\n")
+        for (item in Commands.values()) {
+            sb.append("[${index++}] $item, ${item.message}\n")
         }
         return sb.toString()
     }
-
-    fun getCurrentCommand() : String {
-        return messsages[commandIndex]
-    }
-
-    var uiHandler = Handler(Looper.getMainLooper())
 
     interface UpdateCallback {
         fun onUpdate(message: String, countdown: Int = -1)
@@ -94,20 +84,9 @@ class TextToSpeechLooper (val context: Context) {
         updateListener?.onUpdate(message, countdown)
     }
 
-
-
-
-    val strWakeword: String = "ALEXA"
-
-    var ttsCommand:TextToSpeech? = null
-
     fun start() {
 
-        if (timeTestStarted == 0L) {
-            timeTestStarted = System.currentTimeMillis()
-        } else {
-            timeTestRestarted = System.currentTimeMillis()
-        }
+        timeTestRecord.onStarted()
 
         notifyCallback("started")
 
@@ -134,7 +113,7 @@ class TextToSpeechLooper (val context: Context) {
         ttsCommand?.shutdown()
         ttsCommand = null
 
-        timeTestStopped = System.currentTimeMillis()
+        timeTestRecord.onStopped()
 
         notifyCallback("stopped")
     }
@@ -160,7 +139,7 @@ class TextToSpeechLooper (val context: Context) {
             override fun onDone(status: String?) {
                 Log.d(TAG, "onDone($status)")
 
-                if (status == strWakeword) {
+                if (status == currentCommand.wakeword) {
                     // wakeword -> command
                     commandHandler.sendEmptyMessage(0)
                 } else {
@@ -180,9 +159,8 @@ class TextToSpeechLooper (val context: Context) {
         startWakeword()
     }
 
-    var commandHandler = CommandHandler(this)
 
-    class CommandHandler(val controller: TextToSpeechLooper) : Handler() {
+    class CommandHandler(val controller: AgingTestManager) : Handler() {
         override fun handleMessage(msg: Message) {
             when (msg.what) {
                 0 -> {
@@ -195,12 +173,6 @@ class TextToSpeechLooper (val context: Context) {
         }
     }
 
-    private fun setCommandExecuted() {
-        Log.d(TAG, "setCommandExecuted(${commandIndex})")
-        commandIndex++
-        commandExectued++
-    }
-
     private fun startWakeword() {
         countDownTimerWakeword.start()
 
@@ -210,6 +182,17 @@ class TextToSpeechLooper (val context: Context) {
         countDownTimerCommand.start()
     }
 
+    private fun setupCommandExecute() {
+
+        commandIndex++
+        commandExectued++
+        if (Commands.values().size <= commandIndex) {
+            commandIndex = 0
+        }
+
+        Log.d(TAG, "setupCommandExecute(${commandIndex})")
+    }
+
     // status: idle -> wakeword
     var countDownTimerWakeword: CountDownTimer = object: CountDownTimer(COUNTDOWN_DELAY_WAKEWORD,COUNTDOWN_TICK) {
         override fun onTick(progess: Long) {
@@ -217,10 +200,14 @@ class TextToSpeechLooper (val context: Context) {
         }
         override fun onFinish() {
             uiHandler.post {
-                Log.d(TAG, "startWakeword() exec now")
+                setupCommandExecute()
+                Log.d(TAG, "startWakeword($currentCommand) exec now")
+                //
+                ttsCommand?.setLanguage(currentCommand.locale)
+                //
                 val params = HashMap<String, String>()
-                params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = strWakeword
-                var result = ttsCommand?.speak(strWakeword, TextToSpeech.QUEUE_FLUSH, params)
+                params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = currentCommand.wakeword
+                var result = ttsCommand?.speak(currentCommand.wakeword, TextToSpeech.QUEUE_FLUSH, params)
             }
         }
     }
@@ -231,17 +218,16 @@ class TextToSpeechLooper (val context: Context) {
         }
         override fun onFinish() {
             uiHandler.post{
-                if (messsages.size <= commandIndex) {
+                if (Commands.values().size <= commandIndex) {
                     commandIndex = 0
                 }
                 Log.d(TAG, "startCommand($commandIndex) exec now")
 
-                val command = getCurrentCommand()
+                val command = currentCommand
 
                 val params = HashMap<String, String>()
-                params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = command
-                var result = ttsCommand?.speak(command, TextToSpeech.QUEUE_FLUSH, params)
-                setCommandExecuted()
+                params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = command.message
+                var result = ttsCommand?.speak(command.message, TextToSpeech.QUEUE_FLUSH, params)
             }
         }
     }

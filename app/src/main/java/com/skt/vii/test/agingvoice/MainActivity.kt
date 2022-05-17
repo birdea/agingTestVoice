@@ -11,7 +11,7 @@ class MainActivity : AppCompatActivity() {
 
     val TAG = "MainActivity"
 
-    var ttsLooper = TextToSpeechLooper(this)
+    var ttsLooper = AgingTestManager(this)
 
     var tv_test_summary: TextView? = null
     var tv_current_index: TextView? = null
@@ -40,11 +40,11 @@ class MainActivity : AppCompatActivity() {
     fun init() {
         tv_test_summary?.setText(ttsLooper.getSummaryMessage())
 
-        ttsLooper.setOnUpdateCallback(object: TextToSpeechLooper.UpdateCallback{
+        ttsLooper.setOnUpdateCallback(object: AgingTestManager.UpdateCallback{
             override fun onUpdate(message: String, countdown: Int) {
                 var cur = ttsLooper.commandIndex
                 var total = ttsLooper.commandExectued
-                var timeInfo = ttsLooper.getSummaryTimeInfo()
+                var timeInfo = ttsLooper.timeTestRecord.getSummaryTimeInfo()
                 runOnUiThread {
                     tv_current_index?.setText("-test.index (cur/total): $cur/$total")
                     if (!message.isNullOrEmpty()) {
