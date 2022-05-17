@@ -38,7 +38,6 @@ class AgingTestManager (val context: Context) {
         E1("What time is it now?", Locale.ENGLISH, "Alexa"),
         E2("Play a classic music.", Locale.ENGLISH, "Alexa"),
         E3("Set a alarm after 10 seconds.", Locale.ENGLISH, "Alexa"),
-        E4("Play a classic music.", Locale.ENGLISH, "Alexa"),
         E5("Stop", Locale.ENGLISH, "Alexa"),
         // for nugu(aria)
         //K6("현재 시간을 알려주세요", Locale.KOREA, "아리야"),
