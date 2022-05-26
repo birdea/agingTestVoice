@@ -20,7 +20,7 @@ class AgingTestManager (val context: Context) {
 
     val COUNTDOWN_DELAY_WAKEWORD = 2500L
     val COUNTDOWN_DELAY_COMMAND = 2500L
-    val COUNTDOWN_DELAY_IDLE = 15000L
+    val COUNTDOWN_DELAY_IDLE = 20000L
 
     var ttsCommand:TextToSpeech? = null
 
@@ -35,13 +35,18 @@ class AgingTestManager (val context: Context) {
     enum class Commands(val message: String, val locale: Locale, val wakeword: String) {
 
         // for alexa
-        E1("What time is it now?", Locale.ENGLISH, "Alexa"),
-        E2("Play a classic music.", Locale.ENGLISH, "Alexa"),
-        E3("Set a alarm after 10 seconds.", Locale.ENGLISH, "Alexa"),
-        E5("Stop", Locale.ENGLISH, "Alexa"),
+        E1("Play a music", Locale.ENGLISH, "Alexa"),
+        //E2("What time is it now?", Locale.ENGLISH, "Alexa"),
+        E3("Play a dance music.", Locale.ENGLISH, "Alexa"),
+        //E4("Stop", Locale.ENGLISH, "Alexa"),
+        E5("Play a classic music.", Locale.ENGLISH, "Alexa"),
+        E6("Play a jazz music.", Locale.ENGLISH, "Alexa"),
+        //E7("Set a alarm after 10 seconds.", Locale.ENGLISH, "Alexa"),
+        //E8("Stop", Locale.ENGLISH, "Alexa"),
+
         // for nugu(aria)
-        //K6("현재 시간을 알려주세요", Locale.KOREA, "아리야"),
-        //K7("현재 날씨를 알려주세요..", Locale.KOREA, "아리야"),
+        //K1("현재 시간을 알려주세요", Locale.KOREA, "아리야"),
+        //K2("현재 날씨를 알려주세요..", Locale.KOREA, "아리야"),
         ;
 
         companion object {
